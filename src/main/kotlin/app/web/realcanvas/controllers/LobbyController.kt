@@ -1,26 +1,29 @@
 package app.web.realcanvas.controllers
 
-import app.web.realcanvas.models.Lobby
-import app.web.realcanvas.models.Player
+import app.web.realcanvas.models.*
 import io.ktor.websocket.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
 class LobbyController {
     private val lobbies = ConcurrentHashMap<String, Lobby>()
+    private val json = Json { encodeDefaults = true }
 
     suspend fun createLobby(
         lobbyId: String,
         userName: String,
         session: WebSocketSession
     ) {
-        if(lobbies.containsKey(lobbyId)) {
-            println("Lobby already present")
-            return
-        }
         val playerMap = mutableMapOf(userName to Player(userName, session))
         lobbies[lobbyId] = Lobby(lobbyId, playerMap)
-        session.send("CREATE ___ lobbyid = $lobbyId, userName = $userName")
-        println("create $lobbies")
+        val returnChange = Change(
+            type = ChangeType.LOBBY_UPDATE,
+            lobbyUpdateData = lobbies[lobbyId],
+            gameState = GameState.LOBBY
+        )
+        session.send(json.encodeToString(returnChange))
+        println("Created lobby $lobbies")
     }
 
     suspend fun onJoinLobby(
@@ -28,18 +31,29 @@ class LobbyController {
         userName: String,
         session: WebSocketSession
     ) {
-        if(!lobbies.containsKey(lobbyId)) {
+        if (!lobbies.containsKey(lobbyId)) {
             println("No lobby with the given ID")
             return
         }
-        if(lobbies[lobbyId]?.players?.containsKey(userName) == true) {
+        if (lobbies[lobbyId]?.players?.containsKey(userName) == true) {
             println("Player present")
             return
         }
 
-        lobbies[lobbyId]?.players?.set(userName, Player(userName, session))
-        session.send("JOIN ____ lobbyid = $lobbyId, userName = $userName")
+        lobbies[lobbyId]!!.players[userName] = Player(userName, session)
+        val returnChange = Change(
+            type = ChangeType.LOBBY_UPDATE,
+            lobbyUpdateData = lobbies[lobbyId],
+            gameState = GameState.LOBBY
+        )
+        sendUpdatedLobbyToAll(lobbies[lobbyId]!!, returnChange)
         println("join $lobbies")
+    }
+
+    private suspend fun sendUpdatedLobbyToAll(lobby: Lobby, change: Change) {
+        lobby.players.values.forEach {
+            it.session?.send(json.encodeToString(change))
+        }
     }
 
     suspend fun tryDisconnect(
@@ -53,10 +67,10 @@ class LobbyController {
         lobbies[lobbyId]?.players?.remove(playerId)
 
         lobbies[lobbyId].let {
-            if(it == null) return
+            if (it == null) return
             it.players[playerId]?.session?.close()
             it.players.remove(playerId)
-            if(it.players.isEmpty()) {
+            if (it.players.isEmpty()) {
                 println("No players in lobby, removing lobby")
                 lobbies.remove(lobbyId)
             }
@@ -69,12 +83,12 @@ class LobbyController {
         var removeLobbyIfNoPlayers = "FALSE"
         lobbies.values.forEach { lobby ->
             val removed = lobby.players.entries.removeIf { it.value.session == session }
-            if(lobby.players.isEmpty()) {
+            if (lobby.players.isEmpty()) {
                 removeLobbyIfNoPlayers = lobby.id
             }
-            if(removed) return@forEach
+            if (removed) return@forEach
         }
-        if(removeLobbyIfNoPlayers != "FALSE") {
+        if (removeLobbyIfNoPlayers != "FALSE") {
             println("No players in lobby, removing lobby")
             lobbies.remove(removeLobbyIfNoPlayers)
         }

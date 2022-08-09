@@ -58,7 +58,6 @@ fun Application.configureSockets() {
                 println("Force socket close")
                 store.forceDisconnect(this)
             }
-
         }
     }
 }
