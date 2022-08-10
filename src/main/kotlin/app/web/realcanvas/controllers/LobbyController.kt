@@ -9,13 +9,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 class LobbyController {
     private val lobbies = ConcurrentHashMap<String, Lobby>()
+
     suspend fun createLobby(
         lobbyId: String,
         userName: String,
         session: WebSocketSession
     ) {
-        val playerMap = mutableMapOf(userName to Player(userName, session))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap)
+        val playerMap = mutableMapOf(userName to Player(userName, true, session))
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, listOf())
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId],
@@ -59,18 +60,19 @@ class LobbyController {
             return
         }
 
-        lobbies[lobbyId]!!.players[userName] = Player(userName, session)
+        lobbies[lobbyId]!!.players[userName] = Player(userName, false, session)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId],
             gameState = GameState.LOBBY
         )
-        sendUpdatedLobbyToAll(lobbies[lobbyId]!!, returnChange)
+        sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("join $lobbies")
     }
 
-    private suspend fun sendUpdatedLobbyToAll(lobby: Lobby, change: Change) {
-        lobby.players.values.forEach {
+    private suspend fun sendUpdatedLobbyToAll(lobbyId: String, change: Change) {
+        lobbies[lobbyId]!!.players.values.forEach {
+            // purposely sending from saved player session
             it.session?.send(Json.encodeToString(change))
         }
     }
@@ -113,5 +115,18 @@ class LobbyController {
         }
         session.send("FORCE DISCONNECT")
         println("force disconnected \n$lobbies")
+    }
+
+    suspend fun updateLobby(change: Change) {
+        val newLobby = change.lobbyUpdateData!!
+        addExistingPlayerSessions(newLobby)
+        lobbies[newLobby.id] = newLobby
+        sendUpdatedLobbyToAll(change.lobbyUpdateData.id, change)
+    }
+
+    private fun addExistingPlayerSessions(newLobby: Lobby) {
+        newLobby.players.values.forEach {
+            it.session = lobbies[newLobby.id]!!.players[it.userName]?.session
+        }
     }
 }

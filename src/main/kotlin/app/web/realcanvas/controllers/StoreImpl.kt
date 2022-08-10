@@ -18,6 +18,7 @@ class StoreImpl: Store {
             ChangeType.CREATE -> createLobby(change)
             ChangeType.JOIN -> joinLobby(change)
             ChangeType.DISCONNECT -> disconnect(change)
+            ChangeType.LOBBY_UPDATE -> updateLobby(change)
             else -> println("Invalid ChangeType")
         }
     }
@@ -41,6 +42,10 @@ class StoreImpl: Store {
             change.disconnectData.playerId,
             session
         )
+    }
+
+    override suspend fun updateLobby(change: Change) {
+        lobbyController.updateLobby(change)
     }
 
     suspend fun forceDisconnect(session: WebSocketSession) {

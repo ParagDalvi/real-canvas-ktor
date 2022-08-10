@@ -8,4 +8,5 @@ interface Store {
     suspend fun createLobby(change: Change)
     suspend fun joinLobby(change: Change)
     suspend fun disconnect(change: Change)
+    suspend fun updateLobby(change: Change)
 }

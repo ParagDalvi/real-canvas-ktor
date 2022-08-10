@@ -7,6 +7,7 @@ import kotlinx.serialization.Transient
 @Serializable
 data class Player(
     val userName: String,
+    val isAdmin: Boolean,
     @Transient
-    val session: WebSocketSession? = null
+    var session: WebSocketSession? = null
 )
