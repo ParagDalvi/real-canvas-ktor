@@ -9,8 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 class LobbyController {
     private val lobbies = ConcurrentHashMap<String, Lobby>()
-    private val json = Json { encodeDefaults = true }
-
     suspend fun createLobby(
         lobbyId: String,
         userName: String,
@@ -23,7 +21,7 @@ class LobbyController {
             lobbyUpdateData = lobbies[lobbyId],
             gameState = GameState.LOBBY
         )
-        session.send(json.encodeToString(returnChange))
+        session.send(Json.encodeToString(returnChange))
         println("Created lobby $lobbies")
     }
 
@@ -43,7 +41,7 @@ class LobbyController {
                     doWhat = TOAST
                 )
             )
-            session.send(json.encodeToString(returnChange))
+            session.send(Json.encodeToString(returnChange))
             return
         }
         if (lobbies[lobbyId]?.players?.containsKey(userName) == true) {
@@ -57,7 +55,7 @@ class LobbyController {
                     doWhat = TOAST
                 )
             )
-            session.send(json.encodeToString(returnChange))
+            session.send(Json.encodeToString(returnChange))
             return
         }
 
@@ -73,7 +71,7 @@ class LobbyController {
 
     private suspend fun sendUpdatedLobbyToAll(lobby: Lobby, change: Change) {
         lobby.players.values.forEach {
-            it.session?.send(json.encodeToString(change))
+            it.session?.send(Json.encodeToString(change))
         }
     }
 
