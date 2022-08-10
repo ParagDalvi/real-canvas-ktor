@@ -1,6 +1,7 @@
 package app.web.realcanvas.controllers
 
 import app.web.realcanvas.models.*
+import app.web.realcanvas.utils.TOAST
 import io.ktor.websocket.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,10 +34,30 @@ class LobbyController {
     ) {
         if (!lobbies.containsKey(lobbyId)) {
             println("No lobby with the given ID")
+            val returnChange = Change(
+                type = ChangeType.ERROR,
+                errorData = ErrorData(
+                    "No lobby found, check code",
+                    "No lobby found, check code",
+                    "server/Sockets.kt-onJoinLobby",
+                    doWhat = TOAST
+                )
+            )
+            session.send(json.encodeToString(returnChange))
             return
         }
         if (lobbies[lobbyId]?.players?.containsKey(userName) == true) {
             println("Player present")
+            val returnChange = Change(
+                type = ChangeType.ERROR,
+                errorData = ErrorData(
+                    "Same Username present, try different",
+                    "Same Username present, try different",
+                    "server/Sockets.kt-onJoinLobby",
+                    doWhat = TOAST
+                )
+            )
+            session.send(json.encodeToString(returnChange))
             return
         }
 
