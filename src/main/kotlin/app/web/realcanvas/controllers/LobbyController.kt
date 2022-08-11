@@ -16,11 +16,10 @@ class LobbyController {
         session: WebSocketSession
     ) {
         val playerMap = mutableMapOf(userName to Player(userName, true, session))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap, listOf())
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, listOf(), GameState.LOBBY)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId],
-            gameState = GameState.LOBBY
         )
         session.send(Json.encodeToString(returnChange))
         println("Created lobby $lobbies")
@@ -64,7 +63,6 @@ class LobbyController {
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId],
-            gameState = GameState.LOBBY
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("join $lobbies")

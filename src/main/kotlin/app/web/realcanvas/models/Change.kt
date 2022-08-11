@@ -6,10 +6,6 @@ enum class ChangeType {
     CREATE, JOIN, DISCONNECT, LOBBY_UPDATE, ERROR
 }
 
-enum class GameState {
-    OUT, LOBBY, IN_GAME
-}
-
 @Serializable
 data class Change(
     val type: ChangeType,
@@ -17,7 +13,6 @@ data class Change(
     val joinData: JoinData? = null,
     val disconnectData: DisconnectData? = null,
     val lobbyUpdateData: Lobby? = null,
-    val gameState: GameState? = null,
     val errorData: ErrorData? = null
 )
 
