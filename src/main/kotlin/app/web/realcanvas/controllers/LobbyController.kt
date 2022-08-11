@@ -16,7 +16,7 @@ class LobbyController {
         session: WebSocketSession
     ) {
         val playerMap = mutableMapOf(userName to Player(userName, true, session))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap, listOf(), GameState.LOBBY)
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), GameState.LOBBY)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId],
@@ -94,7 +94,13 @@ class LobbyController {
                 lobbies.remove(lobbyId)
             }
         }
-        session.send("DISCONNECT -> lobbyid = $lobbyId, playerId = $playerId")
+
+        lobbies[lobbyId]?.messages?.add(Message(playerId, MessageType.ALERT, "$playerId left"))
+        val returnChange = Change(
+            type = ChangeType.LOBBY_UPDATE,
+            lobbyUpdateData = lobbies[lobbyId]
+        )
+        sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("Player disconnected \n$lobbies")
     }
 

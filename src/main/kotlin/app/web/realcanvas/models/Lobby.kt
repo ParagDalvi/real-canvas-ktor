@@ -10,6 +10,6 @@ enum class GameState {
 data class Lobby(
     val id: String,
     val players: MutableMap<String, Player>,
-    val messages: List<Message>,
+    val messages: MutableList<Message>,
     val gameState: GameState
 )

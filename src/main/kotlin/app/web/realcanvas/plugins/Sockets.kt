@@ -62,7 +62,6 @@ fun Application.configureSockets() {
                 println(e.localizedMessage)
                 val returnChange = Change(
                     type = ChangeType.ERROR,
-                    gameState = GameState.OUT,
                     errorData = ErrorData(
                         e.message ?: "Unknown Error",
                         "Failed to perform, please try again",
