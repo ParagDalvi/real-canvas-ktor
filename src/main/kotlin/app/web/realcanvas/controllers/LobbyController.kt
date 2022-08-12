@@ -1,8 +1,11 @@
 package app.web.realcanvas.controllers
 
 import app.web.realcanvas.models.*
+import app.web.realcanvas.utils.CHOOSING_TIME
+import app.web.realcanvas.utils.ONE_SEC
 import app.web.realcanvas.utils.TOAST
 import io.ktor.websocket.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
@@ -15,11 +18,11 @@ class LobbyController {
         userName: String,
         session: WebSocketSession
     ) {
-        val playerMap = mutableMapOf(userName to Player(userName, true, session))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), GameState.LOBBY)
+        val playerMap = mutableMapOf(userName to Player(userName, true, session, false))
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "")
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = lobbies[lobbyId],
+            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
         )
         session.send(Json.encodeToString(returnChange))
         println("Created lobby $lobbies")
@@ -59,10 +62,10 @@ class LobbyController {
             return
         }
 
-        lobbies[lobbyId]!!.players[userName] = Player(userName, false, session)
+        lobbies[lobbyId]!!.players[userName] = Player(userName, false, session, false)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = lobbies[lobbyId],
+            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("join $lobbies")
@@ -80,11 +83,14 @@ class LobbyController {
         playerId: String,
         session: WebSocketSession
     ) {
-        lobbies[lobbyId]?.players?.get(playerId)?.session?.close(
+        if (lobbies[lobbyId] == null) return
+
+        lobbies[lobbyId]!!.players[playerId]?.session?.close(
             CloseReason(CloseReason.Codes.NORMAL, "Finally closed")
         )
-        lobbies[lobbyId]?.players?.remove(playerId)
+        lobbies[lobbyId]!!.players.remove(playerId)
 
+        // remove lobby if no players
         lobbies[lobbyId].let {
             if (it == null) return
             it.players[playerId]?.session?.close()
@@ -95,10 +101,10 @@ class LobbyController {
             }
         }
 
-        lobbies[lobbyId]?.messages?.add(Message(playerId, MessageType.ALERT, "$playerId left"))
+        lobbies[lobbyId]!!.messages.add(Message(playerId, MessageType.ALERT, "$playerId left"))
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = lobbies[lobbyId]
+            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("Player disconnected \n$lobbies")
@@ -122,10 +128,77 @@ class LobbyController {
     }
 
     suspend fun updateLobby(change: Change) {
-        val newLobby = change.lobbyUpdateData!!
-        addExistingPlayerSessions(newLobby)
-        lobbies[newLobby.id] = newLobby
-        sendUpdatedLobbyToAll(change.lobbyUpdateData.id, change)
+        val newLobbyUpdateData = change.lobbyUpdateData!!
+        val newLobby = newLobbyUpdateData.data
+
+        if (lobbies[newLobby.id] == null) return
+
+        when (newLobbyUpdateData.updateWhat) {
+            Lobby.addMessage -> {
+                val newMessage = newLobby.messages.getOrNull(0) ?: return
+                lobbies[newLobby.id]!!.messages.add(newMessage)
+            }
+
+            Lobby.whatsHappening -> {
+                checkAndManageGameStateChange(
+                    newLobby.id,
+                    lobbies[newLobby.id]!!.whatsHappening,
+                    newLobby.whatsHappening
+                )
+            }
+        }
+
+        val returnChange = Change(
+            type = ChangeType.LOBBY_UPDATE,
+            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[newLobby.id]!!)
+        )
+        sendUpdatedLobbyToAll(newLobby.id, returnChange)
+    }
+
+    private suspend fun checkAndManageGameStateChange(
+        lobbyId: String,
+        previousGameState: WhatsHappening?,
+        newGameState: WhatsHappening
+    ) {
+        val lobby = lobbies[lobbyId]
+        if (previousGameState == null || lobby == null) return
+
+        if (previousGameState == WhatsHappening.WAITING && newGameState == WhatsHappening.CHOOSING) {
+            // start game
+            startGame(lobby)
+        }
+    }
+
+    private suspend fun startGame(lobby: Lobby) {
+        val originalPlayers = lobby.players.values.toList() // it may happen that player leaves while playing
+        originalPlayers.forEach { currentPlayer ->
+            if (lobby.players.containsKey(currentPlayer.userName)) {
+                val word = "peace"
+                lobby.word = word
+                lobby.whatsHappening = WhatsHappening.CHOOSING
+                lobby.players.values.forEach { it.isDrawing = currentPlayer.userName == it.userName }
+                repeat(CHOOSING_TIME) {
+                    lobby.timer = (CHOOSING_TIME - it).toShort()
+                    val returnChange = Change(
+                        type = ChangeType.LOBBY_UPDATE,
+                        lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+                    )
+                    sendUpdatedLobbyToAll(lobby.id, returnChange)
+                    delay(ONE_SEC)
+                }
+
+                lobby.whatsHappening = WhatsHappening.DRAWING
+                repeat(30) {
+                    lobby.timer = (30 - it).toShort()
+                    val returnChange = Change(
+                        type = ChangeType.LOBBY_UPDATE,
+                        lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+                    )
+                    sendUpdatedLobbyToAll(lobby.id, returnChange)
+                    delay(ONE_SEC)
+                }
+            }
+        }
     }
 
     private fun addExistingPlayerSessions(newLobby: Lobby) {

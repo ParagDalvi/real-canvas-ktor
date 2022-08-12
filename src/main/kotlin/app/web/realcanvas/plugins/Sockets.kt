@@ -5,7 +5,6 @@ import app.web.realcanvas.controllers.StoreImpl
 import app.web.realcanvas.models.Change
 import app.web.realcanvas.models.ChangeType
 import app.web.realcanvas.models.ErrorData
-import app.web.realcanvas.models.GameState
 import app.web.realcanvas.utils.RESET
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*

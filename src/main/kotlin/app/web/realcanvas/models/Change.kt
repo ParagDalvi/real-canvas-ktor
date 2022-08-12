@@ -12,7 +12,7 @@ data class Change(
     val createData: CreateData? = null,
     val joinData: JoinData? = null,
     val disconnectData: DisconnectData? = null,
-    val lobbyUpdateData: Lobby? = null,
+    val lobbyUpdateData: LobbyUpdateData? = null,
     val errorData: ErrorData? = null
 )
 
@@ -39,4 +39,10 @@ data class ErrorData(
     val displayMessage: String,
     val where: String,
     val doWhat: String
+)
+
+@Serializable
+data class LobbyUpdateData(
+    val updateWhat: String,
+    val data: Lobby
 )
