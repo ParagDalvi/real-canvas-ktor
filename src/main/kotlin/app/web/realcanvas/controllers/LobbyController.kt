@@ -101,6 +101,7 @@ class LobbyController {
             }
         }
 
+        lobbies[lobbyId]!!.messages.clear()
         lobbies[lobbyId]!!.messages.add(Message(playerId, MessageType.ALERT, "$playerId left"))
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
@@ -130,16 +131,20 @@ class LobbyController {
     suspend fun updateLobby(change: Change) {
         val newLobbyUpdateData = change.lobbyUpdateData!!
         val newLobby = newLobbyUpdateData.data
+        var whatToUpdate = Lobby.all
 
         if (lobbies[newLobby.id] == null) return
 
         when (newLobbyUpdateData.updateWhat) {
             Lobby.addMessage -> {
+                whatToUpdate = Lobby.addMessage
                 val newMessage = newLobby.messages.getOrNull(0) ?: return
+                lobbies[newLobby.id]!!.messages.clear()
                 lobbies[newLobby.id]!!.messages.add(newMessage)
             }
 
             Lobby.whatsHappening -> {
+                whatToUpdate = Lobby.whatsHappening
                 checkAndManageGameStateChange(
                     newLobby.id,
                     lobbies[newLobby.id]!!.whatsHappening,
@@ -150,7 +155,7 @@ class LobbyController {
 
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[newLobby.id]!!)
+            lobbyUpdateData = LobbyUpdateData(whatToUpdate, lobbies[newLobby.id]!!)
         )
         sendUpdatedLobbyToAll(newLobby.id, returnChange)
     }

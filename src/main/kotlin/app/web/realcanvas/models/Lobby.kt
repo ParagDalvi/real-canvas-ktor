@@ -19,5 +19,8 @@ data class Lobby(
         const val all = "all"
         const val addMessage = "addMessage"
         const val whatsHappening = "whatsHappening"
+        const val player = "player"
+        const val timer = "timer"
+        const val word = "word"
     }
 }
