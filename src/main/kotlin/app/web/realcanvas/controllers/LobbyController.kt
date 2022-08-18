@@ -194,11 +194,16 @@ class LobbyController {
                     lobby.whatsHappening = WhatsHappening.CHOOSING
                     lobby.players.values.forEach { it.isDrawing = currentPlayer.userName == it.userName }
 
+                    sendUpdatedLobbyToAll(
+                        lobby.id,
+                        Change(type = ChangeType.LOBBY_UPDATE, lobbyUpdateData = LobbyUpdateData(Lobby.players, lobby))
+                    )
+
                     repeat(CHOOSING_TIME) {
                         lobby.timer = (CHOOSING_TIME - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+                            lobbyUpdateData = LobbyUpdateData(Lobby.timer, lobby)
                         )
                         sendUpdatedLobbyToAll(lobby.id, returnChange)
                         delay(ONE_SEC)
@@ -209,7 +214,7 @@ class LobbyController {
                         lobby.timer = (30 - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+                            lobbyUpdateData = LobbyUpdateData(Lobby.timer, lobby)
                         )
                         sendUpdatedLobbyToAll(lobby.id, returnChange)
                         delay(ONE_SEC)
