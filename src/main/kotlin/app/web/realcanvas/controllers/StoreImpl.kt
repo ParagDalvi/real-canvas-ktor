@@ -7,25 +7,26 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 
-class StoreImpl: Store {
+class StoreImpl : Store {
     private var lobbyController: LobbyController = LobbyController()
     private lateinit var session: WebSocketSession
 
     override suspend fun listen(json: String, session: WebSocketSession) {
         this.session = session
         val change = Json.decodeFromString<Change>(json)
-        when(change.type) {
+        when (change.type) {
             ChangeType.CREATE -> createLobby(change)
             ChangeType.JOIN -> joinLobby(change)
             ChangeType.DISCONNECT -> disconnect(change)
             ChangeType.LOBBY_UPDATE -> updateLobby(change)
+            ChangeType.DRAWING -> handleDrawingPoints(change)
             else -> println("Invalid ChangeType")
         }
     }
 
     override suspend fun createLobby(change: Change) {
         val userName = change.createData!!.userName
-        val lobbyId = List(6){('0'..'9').random()}.joinToString("")
+        val lobbyId = List(6) { ('0'..'9').random() }.joinToString("")
 
         lobbyController.createLobby(lobbyId, userName, session)
     }
@@ -40,7 +41,6 @@ class StoreImpl: Store {
         lobbyController.tryDisconnect(
             change.disconnectData!!.lobbyId,
             change.disconnectData.playerId,
-            session
         )
     }
 
@@ -48,7 +48,11 @@ class StoreImpl: Store {
         lobbyController.updateLobby(change)
     }
 
-    suspend fun forceDisconnect(session: WebSocketSession) {
+    override suspend fun handleDrawingPoints(change: Change) {
+        lobbyController.handleDrawingPoints(change)
+    }
+
+    fun forceDisconnect(session: WebSocketSession) {
         lobbyController.forceDisconnect(session)
     }
 
