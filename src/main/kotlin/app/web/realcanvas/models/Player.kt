@@ -10,5 +10,6 @@ data class Player(
     val isAdmin: Boolean,
     @Transient
     var session: WebSocketSession? = null,
-    var isDrawing: Boolean
+    var isDrawing: Boolean,
+    var score: Int
 )

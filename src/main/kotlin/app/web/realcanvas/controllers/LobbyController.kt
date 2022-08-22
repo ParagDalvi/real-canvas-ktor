@@ -21,7 +21,7 @@ class LobbyController {
         userName: String,
         session: WebSocketSession
     ) {
-        val playerMap = mutableMapOf(userName to Player(userName, true, session, false))
+        val playerMap = mutableMapOf(userName to Player(userName, true, session, false, 0))
         lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "")
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
@@ -65,7 +65,7 @@ class LobbyController {
             return
         }
 
-        lobbies[lobbyId]!!.players[userName] = Player(userName, false, session, false)
+        lobbies[lobbyId]!!.players[userName] = Player(userName, false, session, false, 0)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
