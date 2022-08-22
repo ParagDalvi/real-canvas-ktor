@@ -210,8 +210,8 @@ class LobbyController {
                     }
 
                     lobby.whatsHappening = WhatsHappening.DRAWING
-                    repeat(30) {
-                        lobby.timer = (30 - it).toShort()
+                    repeat(2) {
+                        lobby.timer = (2 - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
                             lobbyUpdateData = LobbyUpdateData(Lobby.timer, lobby)
@@ -221,6 +221,13 @@ class LobbyController {
                     }
                 }
             }
+            lobby.whatsHappening = WhatsHappening.WAITING
+            val returnChange = Change(
+                type = ChangeType.LOBBY_UPDATE,
+                lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+            )
+            lobby.players.values.forEach { it.isDrawing = false }
+            sendUpdatedLobbyToAll(lobby.id, returnChange)
         }
     }
 
