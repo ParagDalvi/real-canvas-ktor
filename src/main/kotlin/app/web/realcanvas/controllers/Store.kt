@@ -10,4 +10,5 @@ interface Store {
     suspend fun disconnect(change: Change)
     suspend fun updateLobby(change: Change)
     suspend fun handleDrawingPoints(change: Change)
+    suspend fun handleNewMessage(change: Change)
 }

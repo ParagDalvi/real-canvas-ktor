@@ -20,6 +20,7 @@ class StoreImpl : Store {
             ChangeType.DISCONNECT -> disconnect(change)
             ChangeType.LOBBY_UPDATE -> updateLobby(change)
             ChangeType.DRAWING -> handleDrawingPoints(change)
+            ChangeType.MESSAGE -> handleNewMessage(change)
             else -> println("Invalid ChangeType")
         }
     }
@@ -52,8 +53,11 @@ class StoreImpl : Store {
         lobbyController.handleDrawingPoints(change)
     }
 
+    override suspend fun handleNewMessage(change: Change) {
+        lobbyController.sendNewMessage(change)
+    }
+
     fun forceDisconnect(session: WebSocketSession) {
         lobbyController.forceDisconnect(session)
     }
-
 }

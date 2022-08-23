@@ -25,7 +25,7 @@ class LobbyController {
         lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "")
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!),
+            lobbyUpdateData = lobbies[lobbyId]
         )
         sendData(session, returnChange)
         println("Created lobby $lobbies")
@@ -68,7 +68,7 @@ class LobbyController {
         lobbies[lobbyId]!!.players[userName] = Player(userName, false, session, false, 0)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
+            lobbyUpdateData = lobbies[lobbyId]!!
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("join $lobbies")
@@ -110,7 +110,7 @@ class LobbyController {
         lobbies[lobbyId]!!.messages.add(Message(playerId, MessageType.ALERT, "$playerId left"))
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = LobbyUpdateData(Lobby.all, lobbies[lobbyId]!!)
+            lobbyUpdateData = lobbies[lobbyId]!!
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
         println("Player disconnected \n$lobbies")
@@ -139,35 +139,32 @@ class LobbyController {
     }
 
     suspend fun updateLobby(change: Change) {
-        val newLobbyUpdateData = change.lobbyUpdateData!!
-        val newLobby = newLobbyUpdateData.data
-        var whatToUpdate = Lobby.all
+        val newLobby = change.lobbyUpdateData!!
 
         if (lobbies[newLobby.id] == null) return
 
-        when (newLobbyUpdateData.updateWhat) {
-            Lobby.addMessage -> {
-                whatToUpdate = Lobby.addMessage
-                val newMessage = newLobby.messages.getOrNull(0) ?: return
-                lobbies[newLobby.id]!!.messages.clear()
-                lobbies[newLobby.id]!!.messages.add(newMessage)
-            }
-
-            Lobby.whatsHappening -> {
-                whatToUpdate = Lobby.whatsHappening
-                checkAndManageGameStateChange(
-                    newLobby.id,
-                    lobbies[newLobby.id]!!.whatsHappening,
-                    newLobby.whatsHappening
-                )
-            }
-        }
+        val previousGameState = lobbies[newLobby.id]!!.whatsHappening
+        addExistingPlayerSessions(newLobby)
+        lobbies[newLobby.id] = newLobby
 
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
-            lobbyUpdateData = LobbyUpdateData(whatToUpdate, lobbies[newLobby.id]!!)
+            lobbyUpdateData = lobbies[newLobby.id]!!
         )
+
         sendUpdatedLobbyToAll(newLobby.id, returnChange)
+
+        checkAndManageGameStateChange(
+            newLobby.id,
+            previousGameState,
+            newLobby.whatsHappening
+        )
+    }
+
+    private fun addExistingPlayerSessions(newLobby: Lobby) {
+        newLobby.players.values.forEach {
+            it.session = lobbies[newLobby.id]!!.players[it.userName]?.session
+        }
     }
 
     private suspend fun checkAndManageGameStateChange(
@@ -196,14 +193,14 @@ class LobbyController {
 
                     sendUpdatedLobbyToAll(
                         lobby.id,
-                        Change(type = ChangeType.LOBBY_UPDATE, lobbyUpdateData = LobbyUpdateData(Lobby.players, lobby))
+                        Change(type = ChangeType.LOBBY_UPDATE, lobbyUpdateData = lobby)
                     )
 
                     repeat(CHOOSING_TIME) {
                         lobby.timer = (CHOOSING_TIME - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = LobbyUpdateData(Lobby.timer, lobby)
+                            lobbyUpdateData = lobby
                         )
                         sendUpdatedLobbyToAll(lobby.id, returnChange)
                         delay(ONE_SEC)
@@ -214,7 +211,7 @@ class LobbyController {
                         lobby.timer = (2 - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = LobbyUpdateData(Lobby.timer, lobby)
+                            lobbyUpdateData = lobby
                         )
                         sendUpdatedLobbyToAll(lobby.id, returnChange)
                         delay(ONE_SEC)
@@ -224,7 +221,7 @@ class LobbyController {
             lobby.whatsHappening = WhatsHappening.WAITING
             val returnChange = Change(
                 type = ChangeType.LOBBY_UPDATE,
-                lobbyUpdateData = LobbyUpdateData(Lobby.all, lobby)
+                lobbyUpdateData = lobby
             )
             lobby.players.values.forEach { it.isDrawing = false }
             sendUpdatedLobbyToAll(lobby.id, returnChange)
@@ -240,5 +237,10 @@ class LobbyController {
         CoroutineScope(coroutineContext).launch {
             session.send(Json.encodeToString(change))
         }
+    }
+
+    suspend fun sendNewMessage(change: Change) {
+        val lobbyId = change.messageData!!.lobbyId
+        sendUpdatedLobbyToAll(lobbyId, change)
     }
 }
