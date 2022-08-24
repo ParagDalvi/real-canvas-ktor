@@ -22,7 +22,7 @@ class LobbyController {
         session: WebSocketSession
     ) {
         val playerMap = mutableMapOf(userName to Player(userName, true, session, false, 0))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "")
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "", mutableListOf())
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
             lobbyUpdateData = lobbies[lobbyId]
@@ -177,55 +177,65 @@ class LobbyController {
 
         if (previousGameState == WhatsHappening.WAITING && newGameState == WhatsHappening.CHOOSING) {
             // start game
-            startGame(lobby)
+            startGame(lobbyId)
         }
     }
 
-    private suspend fun startGame(lobby: Lobby) {
+    private suspend fun startGame(lobbyId: String) {
         CoroutineScope(coroutineContext).launch {
-            val originalPlayers = lobby.players.values.toList()
+            val originalPlayers = lobbies[lobbyId]!!.players.values.toList()
             originalPlayers.forEach { currentPlayer ->
-                if (lobby.players.containsKey(currentPlayer.userName)) {
-                    val word = "peace"
-                    lobby.word = word
-                    lobby.whatsHappening = WhatsHappening.CHOOSING
-                    lobby.players.values.forEach { it.isDrawing = currentPlayer.userName == it.userName }
+                if (lobbies[lobbyId]!!.players.containsKey(currentPlayer.userName)) {
+                    setRandomWords(lobbies[lobbyId]!!.words)
+                    lobbies[lobbyId]!!.selectedWord = lobbies[lobbyId]!!.words[0]
+                    lobbies[lobbyId]!!.whatsHappening = WhatsHappening.CHOOSING
+                    lobbies[lobbyId]!!.players.values.forEach { it.isDrawing = currentPlayer.userName == it.userName }
 
                     sendUpdatedLobbyToAll(
-                        lobby.id,
-                        Change(type = ChangeType.LOBBY_UPDATE, lobbyUpdateData = lobby)
+                        lobbies[lobbyId]!!.id,
+                        Change(type = ChangeType.LOBBY_UPDATE, lobbyUpdateData = lobbies[lobbyId]!!)
                     )
 
                     repeat(CHOOSING_TIME) {
-                        lobby.timer = (CHOOSING_TIME - it).toShort()
+                        lobbies[lobbyId]!!.timer = (CHOOSING_TIME - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = lobby
+                            lobbyUpdateData = lobbies[lobbyId]!!
                         )
-                        sendUpdatedLobbyToAll(lobby.id, returnChange)
+                        sendUpdatedLobbyToAll(lobbies[lobbyId]!!.id, returnChange)
                         delay(ONE_SEC)
                     }
 
-                    lobby.whatsHappening = WhatsHappening.DRAWING
-                    repeat(2) {
-                        lobby.timer = (2 - it).toShort()
+                    lobbies[lobbyId]!!.whatsHappening = WhatsHappening.DRAWING
+                    repeat(30) {
+                        lobbies[lobbyId]!!.timer = (30 - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
-                            lobbyUpdateData = lobby
+                            lobbyUpdateData = lobbies[lobbyId]!!
                         )
-                        sendUpdatedLobbyToAll(lobby.id, returnChange)
+                        sendUpdatedLobbyToAll(lobbies[lobbyId]!!.id, returnChange)
                         delay(ONE_SEC)
                     }
+
+                    // wait to show correct word ui
+                    repeat(5) { delay(ONE_SEC) }
                 }
             }
-            lobby.whatsHappening = WhatsHappening.WAITING
+            lobbies[lobbyId]!!.whatsHappening = WhatsHappening.WAITING
             val returnChange = Change(
                 type = ChangeType.LOBBY_UPDATE,
-                lobbyUpdateData = lobby
+                lobbyUpdateData = lobbies[lobbyId]!!
             )
-            lobby.players.values.forEach { it.isDrawing = false }
-            sendUpdatedLobbyToAll(lobby.id, returnChange)
+            lobbies[lobbyId]!!.players.values.forEach { it.isDrawing = false }
+            sendUpdatedLobbyToAll(lobbies[lobbyId]!!.id, returnChange)
         }
+    }
+
+    private fun setRandomWords(words: MutableList<String>) {
+        val list = listOf("peace", "home", "family", "work", "help", "support")
+        val randomIndexes = List(3) { (list.indices).random() }
+        words.clear()
+        randomIndexes.forEach { words.add(list[it]) }
     }
 
     suspend fun handleDrawingPoints(change: Change) {

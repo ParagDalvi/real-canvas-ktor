@@ -27,8 +27,8 @@ class StoreImpl : Store {
 
     override suspend fun createLobby(change: Change) {
         val userName = change.createData!!.userName
-        val lobbyId = List(6) { ('0'..'9').random() }.joinToString("")
-
+//        val lobbyId = List(6) { ('0'..'9').random() }.joinToString("")
+        val lobbyId = "11"
         lobbyController.createLobby(lobbyId, userName, session)
     }
 
