@@ -47,9 +47,13 @@ data class ErrorData(
 data class DrawingData(
     val lobbyId: String,
     val userName: String,
+    val doWhatWhenDrawing: DoWhatWhenDrawing,
     val list: List<DrawPoints>
 )
 
+enum class DoWhatWhenDrawing {
+    ADD, UNDO, CLEAR
+}
 @Serializable
 data class DrawPoints(
     val what: String,
