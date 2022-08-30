@@ -30,7 +30,7 @@ fun Application.configureSockets() {
             try {
                 for (frame in incoming) {
                     frame as? Frame.Text ?: continue
-                    store.listen(frame.readText(), this@webSocket)
+                    store.listen(frame.readText(), this)
                 }
             } catch (e: Exception) {
                 println(e.localizedMessage)
@@ -46,7 +46,7 @@ fun Application.configureSockets() {
                 send(json.encodeToString(returnChange))
             } finally {
                 println("Force socket close")
-                store.forceDisconnect(this)
+                store.disconnectAndContinue(this)
             }
         }
     }
