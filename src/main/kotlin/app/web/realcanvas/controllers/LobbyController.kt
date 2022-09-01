@@ -147,7 +147,7 @@ class LobbyController {
         }
         val returnChange = Change(
             ChangeType.MESSAGE,
-            messageData = MessageData(lobbyId, Message(username, MessageType.DEFAULT, "$username left"))
+            messageData = MessageData(lobbyId, message = Message(username, MessageType.DEFAULT, "$username left"))
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
 
@@ -278,7 +278,21 @@ class LobbyController {
 
     suspend fun sendNewMessage(change: Change) {
         val lobbyId = change.messageData!!.lobbyId
-        sendUpdatedLobbyToAll(lobbyId, change)
+        if (lobbies[lobbyId]?.whatsHappening == WhatsHappening.DRAWING && change.messageData.message.message == change.messageData.selectedWord) {
+            val playerId = change.messageData.playerId
+            if (playerId != null && lobbies.containsKey(lobbyId) && lobbies[lobbyId]!!.players.containsKey(playerId)) {
+                lobbies[lobbyId]!!.players[playerId]!!.score += 10
+                val successChangeMessage = Change(
+                    ChangeType.MESSAGE, messageData = MessageData(
+                        lobbyId,
+                        message = Message(playerId, MessageType.GUESS_SUCCESS, "$playerId is correct")
+                    )
+                )
+                sendUpdatedLobbyToAll(lobbyId, successChangeMessage)
+            }
+        } else {
+            sendUpdatedLobbyToAll(lobbyId, change)
+        }
     }
 
     private suspend fun continueGame(lobbyId: String, nextPlayerIndex: Int, isAdmin: Boolean?) {

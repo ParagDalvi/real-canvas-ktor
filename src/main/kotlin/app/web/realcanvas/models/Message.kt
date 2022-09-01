@@ -3,7 +3,7 @@ package app.web.realcanvas.models
 import kotlinx.serialization.Serializable
 
 enum class MessageType {
-    ALERT, DEFAULT
+    ALERT, DEFAULT, GUESS_SUCCESS
 }
 
 @Serializable
