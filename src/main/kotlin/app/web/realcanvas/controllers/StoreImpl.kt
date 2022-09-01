@@ -19,6 +19,7 @@ class StoreImpl : Store {
             ChangeType.LOBBY_UPDATE -> updateLobby(change)
             ChangeType.DRAWING -> handleDrawingPoints(change)
             ChangeType.MESSAGE -> handleNewMessage(change)
+            ChangeType.SELECTED_WORD -> handleSelectedWord(change)
             else -> println("Invalid ChangeType")
         }
     }
@@ -46,6 +47,10 @@ class StoreImpl : Store {
 
     override suspend fun handleNewMessage(change: Change) {
         lobbyController.sendNewMessage(change)
+    }
+
+    override suspend fun handleSelectedWord(change: Change) {
+        lobbyController.handleSelectedWord(change)
     }
 
     suspend fun disconnectAndContinue(session: WebSocketSession) {

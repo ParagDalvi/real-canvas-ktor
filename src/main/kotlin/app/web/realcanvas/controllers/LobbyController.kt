@@ -4,6 +4,7 @@ import app.web.realcanvas.models.*
 import app.web.realcanvas.utils.CHOOSING_TIME
 import app.web.realcanvas.utils.ONE_SEC
 import app.web.realcanvas.utils.TOAST
+import app.web.realcanvas.utils.WORDS
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
@@ -29,7 +30,7 @@ class LobbyController {
         session: WebSocketSession,
     ) {
         val playerMap = mutableMapOf(userName to Player(userName, true, session, false, 0))
-        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, "", mutableListOf())
+        lobbies[lobbyId] = Lobby(lobbyId, playerMap, mutableListOf(), WhatsHappening.WAITING, 0, mutableListOf())
         allSessions[session] = Pair(lobbyId, userName)
         val returnChange = Change(
             type = ChangeType.LOBBY_UPDATE,
@@ -205,7 +206,6 @@ class LobbyController {
             originalPlayers.forEach { currentPlayer ->
                 if (lobbies[lobbyId]!!.players.containsKey(currentPlayer.userName)) {
                     setRandomWords(lobbyId)
-                    lobbies[lobbyId]!!.selectedWord = lobbies[lobbyId]!!.words[0]
                     lobbies[lobbyId]!!.whatsHappening = WhatsHappening.CHOOSING
                     lobbies[lobbyId]!!.players.values.forEach {
                         it.isDrawing = currentPlayer.userName == it.userName
@@ -251,14 +251,16 @@ class LobbyController {
         }
     }
 
-    private fun setRandomWords(lobbyId: String) {
-        val list = listOf("peace", "home", "family", "work", "help", "support")
-        val randomIndexes = List(3) { (list.indices).random() }
+    private suspend fun setRandomWords(lobbyId: String) {
+        val randomIndexes = List(3) { (WORDS.indices).random() }
         with(lobbies[lobbyId]) {
             if (this == null) return
             words.clear()
-            randomIndexes.forEach { words.add(list[it]) }
-            selectedWord = words[0]
+            randomIndexes.forEach { words.add(WORDS[it]) }
+            sendUpdatedLobbyToAll(
+                id,
+                Change(ChangeType.SELECTED_WORD, selectedWordData = SelectedWordData(id, words[0]))
+            )
         }
     }
 
@@ -297,5 +299,10 @@ class LobbyController {
         } else {
             startGame(lobbyId, nextPlayerIndex)
         }
+    }
+
+    suspend fun handleSelectedWord(change: Change) {
+        val selectedWordData = change.selectedWordData!!
+        sendUpdatedLobbyToAll(selectedWordData.lobbyId, change)
     }
 }

@@ -15,7 +15,6 @@ data class Lobby(
     val messages: MutableList<Message>,
     var whatsHappening: WhatsHappening,
     var timer: Short,
-    var selectedWord: String,
     val words: MutableList<String>,
     @Transient
     var job: Job? = null
