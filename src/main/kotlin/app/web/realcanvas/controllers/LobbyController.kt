@@ -145,13 +145,22 @@ class LobbyController {
             lobbies.remove(lobbyId)
             return
         }
-        val returnChange = Change(
+        var returnChange = Change(
             ChangeType.MESSAGE,
             messageData = MessageData(lobbyId, message = Message(username, MessageType.DEFAULT, "$username left"))
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
 
-        continueGame(lobbyId, nextPlayerIndex, leftPlayer?.isAdmin)
+        if (leftPlayer?.isAdmin == true)
+            lobbies[lobbyId]?.players?.values?.first()?.isAdmin = true
+
+        if (lobbies[lobbyId]?.whatsHappening == WhatsHappening.WAITING) {
+            returnChange = Change(ChangeType.LOBBY_UPDATE, lobbyUpdateData = lobbies[lobbyId])
+            sendUpdatedLobbyToAll(lobbyId, returnChange)
+            return
+        }
+
+        continueGame(lobbyId, nextPlayerIndex)
     }
 
     suspend fun updateLobby(change: Change) {
@@ -295,11 +304,8 @@ class LobbyController {
         }
     }
 
-    private suspend fun continueGame(lobbyId: String, nextPlayerIndex: Int, isAdmin: Boolean?) {
+    private suspend fun continueGame(lobbyId: String, nextPlayerIndex: Int) {
         if (!lobbies.containsKey(lobbyId) || nextPlayerIndex == -1) return
-
-        if (isAdmin == true)
-            lobbies[lobbyId]?.players?.values?.first()?.isAdmin = true
 
         // (left player is the last player) || (if only 1 player left in lobby), no need to continue
         if (nextPlayerIndex > (lobbies[lobbyId]?.players?.size ?: Integer.MIN_VALUE)
