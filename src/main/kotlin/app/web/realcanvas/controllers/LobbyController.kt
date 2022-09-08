@@ -325,4 +325,32 @@ class LobbyController {
         val selectedWordData = change.selectedWordData!!
         sendUpdatedLobbyToAll(selectedWordData.lobbyId, change)
     }
+
+    suspend fun removePlayer(change: Change) {
+        val removePlayerData = change.removePlayerData!!
+        val lobbyId = removePlayerData.lobbyId
+        val username = removePlayerData.playerId
+
+        val removedPlayerSession = lobbies[lobbyId]?.players?.get(username)?.session
+
+        lobbies[lobbyId]?.players?.remove(username)
+
+        var returnChange = Change(ChangeType.LOBBY_UPDATE, lobbyUpdateData = lobbies[lobbyId])
+        sendUpdatedLobbyToAll(lobbyId, returnChange, username)
+
+        returnChange = Change(
+            ChangeType.MESSAGE,
+            messageData = MessageData(
+                lobbyId,
+                message = Message(username, MessageType.DEFAULT, "$username was removed")
+            )
+        )
+        sendUpdatedLobbyToAll(lobbyId, returnChange, username)
+
+        returnChange = Change(ChangeType.REMOVE_PLAYER)
+        // purposely not sending from generic function, as it launches new coroutine
+        removedPlayerSession?.send(Json.encodeToString(returnChange))
+        allSessions.remove(removedPlayerSession)
+        removedPlayerSession?.close()
+    }
 }

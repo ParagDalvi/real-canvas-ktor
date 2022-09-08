@@ -11,4 +11,5 @@ interface Store {
     suspend fun handleDrawingPoints(change: Change)
     suspend fun handleNewMessage(change: Change)
     suspend fun handleSelectedWord(change: Change)
+    suspend fun handleRemovePlayer(change: Change)
 }

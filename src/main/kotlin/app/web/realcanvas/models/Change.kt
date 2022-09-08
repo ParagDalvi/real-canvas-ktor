@@ -3,7 +3,15 @@ package app.web.realcanvas.models
 import kotlinx.serialization.Serializable
 
 enum class ChangeType {
-    CREATE, JOIN, DISCONNECT, LOBBY_UPDATE, ERROR, DRAWING, MESSAGE, SELECTED_WORD
+    CREATE,
+    JOIN,
+    DISCONNECT,
+    LOBBY_UPDATE,
+    ERROR,
+    DRAWING,
+    MESSAGE,
+    SELECTED_WORD,
+    REMOVE_PLAYER
 }
 
 @Serializable
@@ -11,7 +19,7 @@ data class Change(
     val type: ChangeType,
     val createData: CreateData? = null,
     val joinData: JoinData? = null,
-    val disconnectData: DisconnectData? = null,
+    val removePlayerData: RemovePlayerData? = null,
     val lobbyUpdateData: Lobby? = null,
     val errorData: ErrorData? = null,
     val drawingData: DrawingData? = null,
@@ -31,7 +39,7 @@ data class JoinData(
 )
 
 @Serializable
-data class DisconnectData(
+data class RemovePlayerData(
     val lobbyId: String,
     val playerId: String
 )

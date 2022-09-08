@@ -20,6 +20,7 @@ class StoreImpl : Store {
             ChangeType.DRAWING -> handleDrawingPoints(change)
             ChangeType.MESSAGE -> handleNewMessage(change)
             ChangeType.SELECTED_WORD -> handleSelectedWord(change)
+            ChangeType.REMOVE_PLAYER -> handleRemovePlayer(change)
             else -> println("Invalid ChangeType")
         }
     }
@@ -51,6 +52,10 @@ class StoreImpl : Store {
 
     override suspend fun handleSelectedWord(change: Change) {
         lobbyController.handleSelectedWord(change)
+    }
+
+    override suspend fun handleRemovePlayer(change: Change) {
+        lobbyController.removePlayer(change)
     }
 
     suspend fun disconnectAndContinue(session: WebSocketSession) {
