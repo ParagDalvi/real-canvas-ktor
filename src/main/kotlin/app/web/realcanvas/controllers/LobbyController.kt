@@ -48,7 +48,6 @@ class LobbyController {
         if (!lobbies.containsKey(lobbyId)) {
             println("No lobby with the given ID")
             val returnChange = Change(
-                //todo: by these errors, in viewModel connection is already made, can be optimised
                 type = ChangeType.ERROR,
                 errorData = ErrorData(
                     "No lobby found, check code",
@@ -57,13 +56,13 @@ class LobbyController {
                     doWhat = TOAST
                 )
             )
-            sendData(session, returnChange)
+            session.send(Json.encodeToString(returnChange))
+            session.close()
             return
         }
         if (lobbies[lobbyId]?.players?.containsKey(userName) == true) {
             println("Player present")
             val returnChange = Change(
-                //todo: by these errors, in viewModel connection is already made, can be optimised
                 type = ChangeType.ERROR,
                 errorData = ErrorData(
                     "Same Username present, try different",
@@ -72,12 +71,12 @@ class LobbyController {
                     doWhat = TOAST
                 )
             )
-            sendData(session, returnChange)
+            session.send(Json.encodeToString(returnChange))
+            session.close()
             return
         }
 
         if (lobbies[lobbyId]?.whatsHappening != WhatsHappening.WAITING) {
-            //todo: by these errors, in viewModel connection is already made, can be optimised
             println("Game already started")
             val returnChange = Change(
                 type = ChangeType.ERROR,
@@ -88,7 +87,8 @@ class LobbyController {
                     doWhat = TOAST
                 )
             )
-            sendData(session, returnChange)
+            session.send(Json.encodeToString(returnChange))
+            session.close()
             return
         }
 
