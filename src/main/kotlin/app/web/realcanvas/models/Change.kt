@@ -56,6 +56,8 @@ data class ErrorData(
 data class DrawingData(
     val lobbyId: String,
     val userName: String,
+    val width: Int,
+    val height: Int,
     val doWhatWhenDrawing: DoWhatWhenDrawing,
     val list: List<DrawPoints>
 )

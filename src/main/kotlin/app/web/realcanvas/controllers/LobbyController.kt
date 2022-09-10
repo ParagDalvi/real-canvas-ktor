@@ -1,10 +1,7 @@
 package app.web.realcanvas.controllers
 
 import app.web.realcanvas.models.*
-import app.web.realcanvas.utils.CHOOSING_TIME
-import app.web.realcanvas.utils.ONE_SEC
-import app.web.realcanvas.utils.TOAST
-import app.web.realcanvas.utils.WORDS
+import app.web.realcanvas.utils.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
@@ -236,8 +233,8 @@ class LobbyController {
                     }
 
                     lobbies[lobbyId]!!.whatsHappening = WhatsHappening.DRAWING
-                    repeat(30) {
-                        lobbies[lobbyId]!!.timer = (30 - it).toShort()
+                    repeat(DRAWING_TIME) {
+                        lobbies[lobbyId]!!.timer = (DRAWING_TIME - it).toShort()
                         val returnChange = Change(
                             type = ChangeType.LOBBY_UPDATE,
                             lobbyUpdateData = lobbies[lobbyId]!!
