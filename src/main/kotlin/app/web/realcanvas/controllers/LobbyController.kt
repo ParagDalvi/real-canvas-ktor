@@ -34,7 +34,6 @@ class LobbyController {
             lobbyUpdateData = lobbies[lobbyId]
         )
         sendData(session, returnChange)
-        println("Created lobby $lobbies")
     }
 
     suspend fun onJoinLobby(
@@ -43,7 +42,6 @@ class LobbyController {
         session: WebSocketSession,
     ) {
         if (!lobbies.containsKey(lobbyId)) {
-            println("No lobby with the given ID")
             val returnChange = Change(
                 type = ChangeType.ERROR,
                 errorData = ErrorData(
@@ -58,7 +56,6 @@ class LobbyController {
             return
         }
         if (lobbies[lobbyId]?.players?.containsKey(userName) == true) {
-            println("Player present")
             val returnChange = Change(
                 type = ChangeType.ERROR,
                 errorData = ErrorData(
@@ -74,7 +71,6 @@ class LobbyController {
         }
 
         if (lobbies[lobbyId]?.whatsHappening != WhatsHappening.WAITING) {
-            println("Game already started")
             val returnChange = Change(
                 type = ChangeType.ERROR,
                 errorData = ErrorData(
@@ -96,7 +92,6 @@ class LobbyController {
             lobbyUpdateData = lobbies[lobbyId]!!
         )
         sendUpdatedLobbyToAll(lobbyId, returnChange)
-        println("join $lobbies")
     }
 
     private suspend fun sendUpdatedLobbyToAll(lobbyId: String, change: Change, except: String? = null) {

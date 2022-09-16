@@ -22,7 +22,7 @@ fun Application.configureSockets() {
         masking = false
         contentConverter = KotlinxWebsocketSerializationConverter(Json)
     }
-    val store = StoreImpl()
+    val store = StoreImpl(this.log)
     val json = Json { encodeDefaults = true }
 
     routing {
@@ -33,7 +33,7 @@ fun Application.configureSockets() {
                     store.listen(frame.readText(), this)
                 }
             } catch (e: Exception) {
-                println(e.localizedMessage)
+                this@configureSockets.log.error("Root error - $e")
                 val returnChange = Change(
                     type = ChangeType.ERROR,
                     errorData = ErrorData(
@@ -45,7 +45,6 @@ fun Application.configureSockets() {
                 )
                 send(json.encodeToString(returnChange))
             } finally {
-                println("Force socket close")
                 store.disconnectAndContinue(this)
             }
         }

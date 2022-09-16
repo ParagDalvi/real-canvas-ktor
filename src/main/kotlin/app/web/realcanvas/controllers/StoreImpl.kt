@@ -2,12 +2,13 @@ package app.web.realcanvas.controllers
 
 import app.web.realcanvas.models.Change
 import app.web.realcanvas.models.ChangeType
+import io.ktor.util.logging.*
 import io.ktor.websocket.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 
-class StoreImpl : Store {
+class StoreImpl(private val log: Logger) : Store {
     private val lobbyController: LobbyController = LobbyController.instance!!
 
     override suspend fun listen(json: String, session: WebSocketSession) {
@@ -21,7 +22,7 @@ class StoreImpl : Store {
             ChangeType.MESSAGE -> handleNewMessage(change)
             ChangeType.SELECTED_WORD -> handleSelectedWord(change)
             ChangeType.REMOVE_PLAYER -> handleRemovePlayer(change)
-            else -> println("Invalid ChangeType")
+            else -> log.warn("Invalid ChangeType")
         }
     }
 
